@@ -5,6 +5,8 @@ import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 import {createTheme, CssBaseline, ThemeProvider} from "@mui/material";
 import {SessionProvider} from "next-auth/react"
+import Navbar from "../component/Navbar";
+import { SWRConfig } from "swr";
 
 
 function App({Component, pageProps: {session, ...pageProps}}) {
@@ -24,7 +26,16 @@ function App({Component, pageProps: {session, ...pageProps}}) {
             <ThemeProvider theme={theme}>
                 <SessionProvider session={session}>
                     <CssBaseline/>
-                    <Component {...pageProps} />
+                    <SWRConfig
+                        value={{
+                            refreshInterval: 3000,
+                            fetcher: (resource, init) => fetch(resource, init).then(res => res.json())
+                        }}
+                    >
+                        <Navbar>
+                            <Component {...pageProps} />
+                        </Navbar>
+                    </SWRConfig>
                 </SessionProvider>
             </ThemeProvider>
         </div>

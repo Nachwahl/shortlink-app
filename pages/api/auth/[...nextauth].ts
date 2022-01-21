@@ -37,4 +37,22 @@ const options = {
       colorScheme: "light"
     },
     adapter: PrismaAdapter(prisma),
+    secret: process.env.SECRET,
+    session: {strategy: "jwt"},
+    jwt: {
+        secret: process.env.SECRET,
+        maxAge: 60 * 60 * 24 * 30
+    },
+    callbacks: {
+        async jwt({token, user, account, profile, isNewUser}) {
+            console.log(user)
+            if (account?.accessToken) {
+                token.accessToken = account.accessToken
+            }
+            if (user?.role) {
+                token.role = user.role
+            }
+            return token
+        }
+    }
 };

@@ -1,6 +1,6 @@
 import React from 'react';
-import {Box, IconButton, Toolbar, Typography} from "@mui/material";
-import { styled, useTheme } from '@mui/material/styles';
+import {Avatar, Box, IconButton, Menu, MenuItem, Toolbar, Tooltip, Typography} from "@mui/material";
+import {styled, useTheme} from '@mui/material/styles';
 
 import MuiDrawer from '@mui/material/Drawer';
 import MuiAppBar from '@mui/material/AppBar';
@@ -17,6 +17,11 @@ import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import Button from "@mui/material/Button";
 import {signIn, signOut, useSession} from "next-auth/react";
 import LocalPoliceRoundedIcon from '@mui/icons-material/LocalPoliceRounded';
+import FormatListBulletedRoundedIcon from '@mui/icons-material/FormatListBulletedRounded';
+import {Logout} from "@mui/icons-material";
+import md5 from "md5";
+import Link from "next/link";
+import {useRouter} from "next/router";
 
 const drawerWidth = 240;
 
@@ -41,7 +46,7 @@ const closedMixin = (theme) => ({
     },
 });
 
-const DrawerHeader = styled('div')(({ theme }) => ({
+const DrawerHeader = styled('div')(({theme}) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'flex-end',
@@ -50,9 +55,10 @@ const DrawerHeader = styled('div')(({ theme }) => ({
     ...theme.mixins.toolbar,
 }));
 
+
 const AppBar = styled(MuiAppBar, {
     shouldForwardProp: (prop) => prop !== 'open',
-})(({ theme, open }) => ({
+})(({theme, open}) => ({
     zIndex: theme.zIndex.drawer + 1,
     transition: theme.transitions.create(['width', 'margin'], {
         easing: theme.transitions.easing.sharp,
@@ -68,8 +74,9 @@ const AppBar = styled(MuiAppBar, {
     }),
 }));
 
-const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' })(
-    ({ theme, open }) => ({
+
+const Drawer = styled(MuiDrawer, {shouldForwardProp: (prop) => prop !== 'open'})(
+    ({theme, open}) => ({
         width: drawerWidth,
         flexShrink: 0,
         whiteSpace: 'nowrap',
@@ -89,7 +96,17 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 const Navbar = ({children}) => {
     const theme = useTheme();
     const [open, setOpen] = React.useState(false);
-    const { data: session, status } = useSession()
+    const {data: session, status} = useSession()
+    const router = useRouter()
+
+    const [anchorEl, setAnchorEl] = React.useState(null);
+    const openMenu = Boolean(anchorEl);
+    const handleClick = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+    const handleClose = () => {
+        setAnchorEl(null);
+    };
 
     const handleDrawerOpen = () => {
         setOpen(true);
@@ -98,10 +115,11 @@ const Navbar = ({children}) => {
     const handleDrawerClose = () => {
         setOpen(false);
     };
+
     return (
         <div>
-            <Box sx={{ display: 'flex' }}>
-                <CssBaseline />
+            <Box sx={{display: 'flex'}}>
+                <CssBaseline/>
                 <AppBar position="fixed" open={open}>
                     <Toolbar>
                         <IconButton
@@ -111,49 +129,90 @@ const Navbar = ({children}) => {
                             edge="start"
                             sx={{
                                 marginRight: '36px',
-                                ...(open && { display: 'none' }),
+                                ...(open && {display: 'none'}),
                             }}
                         >
-                            <MenuIcon />
+                            <MenuIcon/>
                         </IconButton>
-                        <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+                        <Typography variant="h6" noWrap component="div" sx={{flexGrow: 1}}>
                             Build the Earth Shortlinks
                         </Typography>
                         {
-                            status === "unauthenticated" ?  <Button onClick={() => signIn()} color="inherit">Login</Button> :
-                                <div>
-                                    Logged in as {session.user.email}
-                                    <Button onClick={() => signOut()} color="inherit" sx={{ml: 1}}>Logout</Button>
-                                </div>
+                            status !== "authenticated" ?
+                                <Button onClick={() => signIn()} color="inherit">Login</Button> :
+                                <Box>
+                                    <Tooltip title="Account settings">
+                                        <IconButton
+                                            onClick={handleClick}
+                                            size="small"
+                                            sx={{ml: 2}}
+                                            aria-controls={openMenu ? 'account-menu' : undefined}
+                                            aria-haspopup="true"
+                                            aria-expanded={openMenu ? 'true' : undefined}
+                                        >
+                                            <Avatar sx={{width: 32, height: 32}}
+                                                    src={`https://www.gravatar.com/avatar/${md5(session.user.email.toLowerCase().trim())}`}/>
+                                        </IconButton>
+                                    </Tooltip>
+                                    <Menu
+                                        anchorEl={anchorEl}
+                                        id="account-menu"
+                                        open={openMenu}
+                                        onClose={handleClose}
+                                        onClick={handleClose}
+                                        transformOrigin={{horizontal: 'right', vertical: 'top'}}
+                                        anchorOrigin={{horizontal: 'right', vertical: 'bottom'}}
+                                    >
+                                        <MenuItem onClick={() => signOut()}>
+                                            <ListItemIcon>
+                                                <Logout fontSize="small"/>
+                                            </ListItemIcon>
+                                            Logout
+                                        </MenuItem>
+                                    </Menu>
+                                </Box>
+
+
                         }
 
                     </Toolbar>
                 </AppBar>
-                <Drawer variant="permanent" open={open} >
+                <Drawer variant="permanent" open={open}>
                     <DrawerHeader>
                         <IconButton onClick={handleDrawerClose}>
-                            {theme.direction === 'rtl' ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+                            {theme.direction === 'rtl' ? <ChevronRightIcon/> : <ChevronLeftIcon/>}
                         </IconButton>
                     </DrawerHeader>
-                    <Divider />
+                    <Divider/>
                     <List sx={{p: 1}}>
-                        <ListItem button key={"test"} selected sx={{borderRadius: "5px", mb: 1}}>
+                        <Link href="/" passHref>
+                            <ListItem button key={"test"} selected={router.route === "/"}
+                                      sx={{borderRadius: "5px", mb: 1}}>
+                                <ListItemIcon>
+                                    <HomeRoundedIcon/>
+                                </ListItemIcon>
+                                <ListItemText primary={"Dashboard"}/>
+                            </ListItem>
+                        </Link>
+                        <ListItem button key={"shortlinks"} sx={{borderRadius: "5px", mb: 1}}>
                             <ListItemIcon>
-                                <HomeRoundedIcon />
+                                <FormatListBulletedRoundedIcon/>
                             </ListItemIcon>
-                            <ListItemText primary={"Dashboard"}  />
+                            <ListItemText primary={"Your Shortlinks"}/>
                         </ListItem>
-                        <ListItem button key={"admindashboard"} sx={{borderRadius: "5px", mb: 1}} >
-                            <ListItemIcon>
-                                <LocalPoliceRoundedIcon />
-                            </ListItemIcon>
-                            <ListItemText primary={"Administration"}  />
-                        </ListItem>
+                        <Link href="/admin" passHref>
+                            <ListItem button key={"admindashboard"} sx={{borderRadius: "5px", mb: 1}} selected={router.route === "/admin"}>
+                                <ListItemIcon>
+                                    <LocalPoliceRoundedIcon/>
+                                </ListItemIcon>
+                                <ListItemText primary={"Administration"}/>
+                            </ListItem>
+                        </Link>
 
                     </List>
                 </Drawer>
-                <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-                    <DrawerHeader />
+                <Box component="main" sx={{flexGrow: 1, p: 3}}>
+                    <DrawerHeader/>
                     {children}
                 </Box>
             </Box>
